@@ -32,14 +32,15 @@ let transform image =
        (white) or 0 (black) *)
     let pix =
       if Float.compare pix_old_val gray_value > 0
-      then Pixel.of_int Image.max_val image
-      else Pixel.of_int Image.max_val image
+      then Pixel.of_int (Image.max_val image)
+      else Pixel.of_int 0
     in
     print_s
       [%message "new pix val" (Pixel.to_string pix) (x : int) (y : int)];
     (* im both setting and returning the pixel? why? *)
     Image.set gray_image ~x ~y pix;
     (* error is wrong, fix later*)
+    (* is it old - new? *)
     let error = Int.to_float (Pixel.red pix) -. pix_old_val in
     ignore error;
     gray_image
