@@ -1,15 +1,22 @@
 open Core
 
-(* You need to change the implementation of this function so that it
-   replaces the "blue" pixels of the foreground image with pixels from
-   the corresponding position in the background image instead of
-   just ignoring the background image and returning the foreground image.
-*)
-let transform ~foreground ~background:_ = foreground
+(* assume that the background image will always be larger than the foreground
+   image*)
+let transform ~foreground ~background =
+  (* takes in a foreground pixel and returns a background pixel if
+     significantly blue, else returns the same pixel *)
+  let combine_bluescreen ~x ~y (pix_fg : Pixel.t) =
+    if Pixel.blue pix_fg > Pixel.red pix_fg + Pixel.green pix_fg
+    then Image.get background ~x ~y
+    else pix_fg
+  in
+  Image.mapi foreground ~f:combine_bluescreen
+;;
 
 let command =
   Command.basic
-    ~summary:"Replace the 'blue' pixels of an image with those from another image"
+    ~summary:
+      "Replace the 'blue' pixels of an image with those from another image"
     [%map_open.Command
       let foreground_file =
         flag
@@ -28,5 +35,7 @@ let command =
         let image' = transform ~foreground ~background in
         Image.save_ppm
           image'
-          ~filename:(String.chop_suffix_exn foreground_file ~suffix:".ppm" ^ "_vfx.ppm")]
+          ~filename:
+            (String.chop_suffix_exn foreground_file ~suffix:".ppm"
+             ^ "_vfx.ppm")]
 ;;
