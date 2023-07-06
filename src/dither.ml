@@ -18,61 +18,36 @@ let red_err (f1, _, _) = f1
 let green_err (_, f2, _) = f2
 let blue_err (_, _, f3) = f3
 
-(*distributes errors to adjacent pixels*)
+(* distributes errors to adjacent pixels *)
 let distribute_errors x y all_errors image : Image.t =
   (* these will be the base error *)
   let red_error = red_err all_errors /. error_factor in
   let green_error = green_err all_errors /. error_factor in
   let blue_error = blue_err all_errors /. error_factor in
-  (* distributing east *)
-  if x + 1 < Image.width image
-  then (
-    (* adding error to the value on the right *)
-    let pix_east : Pixel.t =
-      ( Float.to_int (7.0 *. red_error)
-        + Pixel.red (Image.get image ~x:(x + 1) ~y)
-      , Float.to_int (7.0 *. green_error)
-        + Pixel.green (Image.get image ~x:(x + 1) ~y)
-      , Float.to_int (7.0 *. blue_error)
-        + Pixel.blue (Image.get image ~x:(x + 1) ~y) )
-    in
-    Image.set image ~x:(x + 1) ~y pix_east);
-  (* distributing southwest*)
-  if x - 1 >= 0 && y + 1 < Image.height image
-  then (
-    let pix_southwest : Pixel.t =
-      ( Float.to_int (3.0 *. red_error)
-        + Pixel.red (Image.get image ~x:(x - 1) ~y:(y + 1))
-      , Float.to_int (3.0 *. green_error)
-        + Pixel.green (Image.get image ~x:(x - 1) ~y:(y + 1))
-      , Float.to_int (3.0 *. blue_error)
-        + Pixel.blue (Image.get image ~x:(x - 1) ~y:(y + 1)) )
-    in
-    Image.set image ~x:(x - 1) ~y:(y + 1) pix_southwest);
-  (* distributing south*)
-  if y + 1 < Image.height image
-  then (
-    let pix_south : Pixel.t =
-      ( Float.to_int (5.0 *. red_error)
-        + Pixel.red (Image.get image ~x ~y:(y + 1))
-      , Float.to_int (5.0 *. green_error)
-        + Pixel.green (Image.get image ~x ~y:(y + 1))
-      , Float.to_int (5.0 *. blue_error)
-        + Pixel.blue (Image.get image ~x ~y:(y + 1)) )
-    in
-    Image.set image ~x ~y:(y + 1) pix_south);
-  (* distributing southeast *)
-  if x + 1 < Image.width image && y + 1 < Image.height image
-  then (
-    let pix_southeast : Pixel.t =
-      ( Float.to_int red_error
-        + Pixel.red (Image.get image ~x:(x + 1) ~y:(y + 1))
-      , Float.to_int green_error
-        + Pixel.green (Image.get image ~x:(x + 1) ~y:(y + 1))
-      , Float.to_int blue_error
-        + Pixel.blue (Image.get image ~x:(x + 1) ~y:(y + 1)) )
-    in
-    Image.set image ~x:(x + 1) ~y:(y + 1) pix_southeast);
+  let error_directions ~new_x ~new_y ~multiply_error =
+    if new_x >= 0
+       && new_x < Image.width image
+       && new_y >= 0
+       && new_y < Image.height image
+    then (
+      let pix : Pixel.t =
+        ( Float.to_int (multiply_error *. red_error)
+          + Pixel.red (Image.get image ~x:new_x ~y:new_y)
+        , Float.to_int (multiply_error *. green_error)
+          + Pixel.green (Image.get image ~x:new_x ~y:new_y)
+        , Float.to_int (multiply_error *. blue_error)
+          + Pixel.blue (Image.get image ~x:new_x ~y:new_y) )
+      in
+      Image.set image ~x:new_x ~y:new_y pix)
+  in
+  (* east *)
+  error_directions ~new_x:(x + 1) ~new_y:y ~multiply_error:7.0;
+  (* southwest*)
+  error_directions ~new_x:(x - 1) ~new_y:(y + 1) ~multiply_error:3.0;
+  (* south *)
+  error_directions ~new_x:x ~new_y:(y + 1) ~multiply_error:5.0;
+  (* southeast *)
+  error_directions ~new_x:(x + 1) ~new_y:(y + 1) ~multiply_error:1.0;
   image
 ;;
 
