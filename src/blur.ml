@@ -5,21 +5,22 @@ let transform image ~radius =
   (* takes coordinates and a pixel and blurs the pixel by taking average of
      pixels *)
   let blur_pixels ~x ~y (pix : Pixel.t) =
-    if x - radius < 0
-       || x + radius >= Image.width image
-       || y - radius < 0
-       || y + radius >= Image.height image
-    then pix
-    else (
-      let sub_image =
-        Image.slice
-          image
-          ~x_start:(x - radius)
-          ~x_end:(x + radius)
-          ~y_start:(y - radius)
-          ~y_end:(y + radius)
-      in
-      Image.mean_pixel sub_image)
+    (* lets generically assign the 4 pts in the beginning*)
+    let x_start = if x - radius < 0 then 0 else x - radius in
+    let x_end =
+      if x + radius >= Image.width image
+      then Image.width image - 1
+      else x + radius
+    in
+    let y_start = if y - radius < 0 then 0 else y - radius in
+    let y_end =
+      if y + radius >= Image.height image
+      then Image.height image - 1
+      else y + radius
+    in
+    let sub_image = Image.slice image ~x_start ~x_end ~y_start ~y_end in
+    ignore pix;
+    Image.mean_pixel sub_image
   in
   Image.mapi image ~f:blur_pixels
 ;;
