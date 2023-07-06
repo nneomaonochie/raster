@@ -61,7 +61,7 @@ let transform image =
       (* depending on what the pixel's value is, its value is reset to
          image's max value (white) or 0 (black) *)
       let new_val =
-        if Float.compare pix_percentage gray_value > 0
+        if Float.(pix_percentage > gray_value)
         then Image.max_val image
         else 0
       in
