@@ -3,6 +3,7 @@ open Core
 let gray_value = 0.5
 let error_factor = 16.0
 
+(* distributes erros to adjacent pixels*)
 let distribute_errors x y error image : Image.t =
   let base_error = error /. error_factor in
   print_s [%message (error : float) (base_error : float)];
@@ -66,11 +67,6 @@ let transform image =
     let error = Int.to_float pix_old_val -. Int.to_float (Pixel.red pix) in
     distribute_errors x y error gray_image
   in
-  (* the image being returned may not be the one i was changing*)
-
-  (* use map, but use a different algo - get errors from adjacent pixels and
-     then add those errors to those pixels (ex: pixel to east error is 0.5,
-     so set east value to east value + 0.5)*)
   Image.foldi gray_image ~init:gray_image ~f:dither_pixels
 ;;
 
