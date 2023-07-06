@@ -18,7 +18,7 @@ let red_err (f1, _, _) = f1
 let green_err (_, f2, _) = f2
 let blue_err (_, _, f3) = f3
 
-(*distributes erros to adjacent pixels*)
+(*distributes errors to adjacent pixels*)
 let distribute_errors x y all_errors image : Image.t =
   (* these will be the base error *)
   let red_error = red_err all_errors /. error_factor in
@@ -28,7 +28,7 @@ let distribute_errors x y all_errors image : Image.t =
   if x + 1 < Image.width image
   then (
     (* adding error to the value on the right *)
-    let pix_east =
+    let pix_east : Pixel.t =
       ( Float.to_int (7.0 *. red_error)
         + Pixel.red (Image.get image ~x:(x + 1) ~y)
       , Float.to_int (7.0 *. green_error)
@@ -40,7 +40,7 @@ let distribute_errors x y all_errors image : Image.t =
   (* distributing southwest*)
   if x - 1 >= 0 && y + 1 < Image.height image
   then (
-    let pix_southwest =
+    let pix_southwest : Pixel.t =
       ( Float.to_int (3.0 *. red_error)
         + Pixel.red (Image.get image ~x:(x - 1) ~y:(y + 1))
       , Float.to_int (3.0 *. green_error)
@@ -49,24 +49,28 @@ let distribute_errors x y all_errors image : Image.t =
         + Pixel.blue (Image.get image ~x:(x - 1) ~y:(y + 1)) )
     in
     Image.set image ~x:(x - 1) ~y:(y + 1) pix_southwest);
-  (* do the rest of errors*)
-
   (* distributing south*)
   if y + 1 < Image.height image
   then (
-    let pix_south =
-      Pixel.of_int
-        (Float.to_int (5.0 *. base_error)
-         + Pixel.red (Image.get image ~x ~y:(y + 1)))
+    let pix_south : Pixel.t =
+      ( Float.to_int (5.0 *. red_error)
+        + Pixel.red (Image.get image ~x ~y:(y + 1))
+      , Float.to_int (5.0 *. green_error)
+        + Pixel.green (Image.get image ~x ~y:(y + 1))
+      , Float.to_int (5.0 *. blue_error)
+        + Pixel.blue (Image.get image ~x ~y:(y + 1)) )
     in
     Image.set image ~x ~y:(y + 1) pix_south);
   (* distributing southeast *)
   if x + 1 < Image.width image && y + 1 < Image.height image
   then (
-    let pix_southeast =
-      Pixel.of_int
-        (Float.to_int base_error
-         + Pixel.red (Image.get image ~x:(x + 1) ~y:(y + 1)))
+    let pix_southeast : Pixel.t =
+      ( Float.to_int red_error
+        + Pixel.red (Image.get image ~x:(x + 1) ~y:(y + 1))
+      , Float.to_int green_error
+        + Pixel.green (Image.get image ~x:(x + 1) ~y:(y + 1))
+      , Float.to_int blue_error
+        + Pixel.blue (Image.get image ~x:(x + 1) ~y:(y + 1)) )
     in
     Image.set image ~x:(x + 1) ~y:(y + 1) pix_southeast);
   image
@@ -74,16 +78,13 @@ let distribute_errors x y all_errors image : Image.t =
 
 (* takes in an image and creates the image in a dithered effect *)
 let transform image =
-  (* converts the image to grayscale to more easily dither it *)
-  (*let gray_image = Grayscale.transform image in *)
-  let dither_pixels ~x ~y gray_image (pix : Pixel.t) : Image.t =
-    (* new pix value * error *)
+  let dither_pixels ~x ~y image (pix : Pixel.t) : Image.t =
     let dither_with_colors old_val : int * float =
       let pix_percentage =
-        Int.to_float old_val /. Int.to_float (Image.max_val gray_image)
+        Int.to_float old_val /. Int.to_float (Image.max_val image)
       in
-      (* depending on what the pixel's value is, its value is reset to 255
-         (white) or 0 (black) *)
+      (* depending on what the pixel's value is, its value is reset to
+         image's max value (white) or 0 (black) *)
       let new_val =
         if Float.compare pix_percentage gray_value > 0
         then Image.max_val image
@@ -101,11 +102,8 @@ let transform image =
     let all_errors =
       create_error_tuple ~red:new_red ~green:new_green ~blue:new_blue
     in
-    Image.set gray_image ~x ~y new_pix;
-    (* ignore all_errors; gray_image *)
-    (* let error = Int.to_float pix_old_val -. Int.to_float (Pixel.red pix)
-       in *)
-    distribute_errors x y all_errors gray_image
+    Image.set image ~x ~y new_pix;
+    distribute_errors x y all_errors image
   in
   Image.foldi image ~init:image ~f:dither_pixels
 ;;
