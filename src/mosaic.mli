@@ -1,4 +1,4 @@
 open Core
 
-val transform : Image.t -> width:int -> height:int -> mosaic:int -> Image.t
+val transform : Image.t -> w:int -> h:int -> moves:int -> Image.t
 val command : Command.t
